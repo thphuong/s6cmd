@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go build -o s6cmd .)"
+    ]
+  }
+}
