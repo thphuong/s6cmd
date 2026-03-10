@@ -80,7 +80,7 @@ func TestGeneratePresignedURL(t *testing.T) {
 		_, err := GeneratePresignedURL(context.Background(), PresignOptions{
 			Bucket:      "mybucket",
 			Key:         "mykey",
-			Method:      "DELETE",
+			Method:      "PATCH",
 			ExpiresIn:   time.Hour,
 			EndpointURL: server.URL,
 			Region:      "us-east-1",

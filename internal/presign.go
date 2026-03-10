@@ -14,7 +14,7 @@ import (
 type PresignOptions struct {
 	Bucket      string
 	Key         string
-	Method      string // GET or PUT
+	Method      string // GET, PUT, or DELETE
 	ExpiresIn   time.Duration
 	Profile     string
 	Region      string
@@ -45,6 +45,12 @@ func GeneratePresignedURL(ctx context.Context, opts PresignOptions) (string, err
 			o.BaseEndpoint = aws.String(opts.EndpointURL)
 		})
 	}
+	// Custom endpoints typically don't support virtual-host style addressing.
+	if opts.EndpointURL != "" {
+		s3Opts = append(s3Opts, func(o *s3.Options) {
+			o.UsePathStyle = true
+		})
+	}
 
 	client := s3.NewFromConfig(cfg, s3Opts...)
 	presignClient := s3.NewPresignClient(client)
@@ -70,7 +76,17 @@ func GeneratePresignedURL(ctx context.Context, opts PresignOptions) (string, err
 		}
 		return req.URL, nil
 
+	case "DELETE":
+		req, err := presignClient.PresignDeleteObject(ctx, &s3.DeleteObjectInput{
+			Bucket: aws.String(opts.Bucket),
+			Key:    aws.String(opts.Key),
+		}, s3.WithPresignExpires(opts.ExpiresIn))
+		if err != nil {
+			return "", fmt.Errorf("failed to presign DELETE request: %w", err)
+		}
+		return req.URL, nil
+
 	default:
-		return "", fmt.Errorf("unsupported method %q: must be GET or PUT", opts.Method)
+		return "", fmt.Errorf("unsupported method %q: must be GET, PUT, or DELETE", opts.Method)
 	}
 }
